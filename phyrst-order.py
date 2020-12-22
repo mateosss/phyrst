@@ -8,9 +8,7 @@ Element = int
 Universe = List[Element]
 Interpretation = Dict[str, Any]
 Assignment = Dict[str, Element]
-ExprType = Enum(
-    "ExprType", "ZEROCONST VAR LEQREL EQ AND OR IMPLIES IFF NOT EXISTS FORALL"
-)
+ExprType = Enum("ExprType", "CONST VAR LEQREL EQ AND OR IMPLIES IFF NOT EXISTS FORALL")
 
 
 class Expression:
@@ -30,6 +28,7 @@ class Expression:
         right: Optional[Expression] = None,
         subexp: Optional[Expression] = None,
         varname: Optional[str] = None,
+        constname: Optional[str] = None,
         quantifier_varname: Optional[str] = None,
     ) -> None:
         self.expression = expression
@@ -38,6 +37,7 @@ class Expression:
         self.right = right
         self.subexp = subexp
         self.varname = varname
+        self.constname = constname
         self.quantifier_varname = quantifier_varname
 
     def __call__(
@@ -51,10 +51,11 @@ class Expression:
         self.right = cast(Expression, self.right)
         self.subexp = cast(Expression, self.subexp)
         self.varname = cast(str, self.varname)
+        self.constname = cast(str, self.constname)
 
         # -> Element
-        if self.exprtype is ExprType.ZEROCONST:
-            return interpretation["0"]
+        if self.exprtype is ExprType.CONST:
+            return interpretation[self.constname]
         if self.exprtype is ExprType.VAR:
             return assignment[self.varname]
         # -> bool
@@ -143,7 +144,7 @@ class Expression:
         return self.expression
 
 
-zeroconst = lambda: Expression("0", ExprType.ZEROCONST)
+const = lambda constname: Expression(constname, ExprType.CONST, constname=constname)
 var = lambda varname: Expression(varname, ExprType.VAR, varname=varname)
 exists = lambda varname, exp: exp.exists(varname)
 forall = lambda varname, exp: exp.forall(varname)
@@ -153,7 +154,7 @@ def test_raw_expressions(
     universe: Universe, interpretation: Interpretation, assignment: Assignment
 ) -> bool:
     sems = universe, interpretation, assignment
-    e_z = Expression("0", ExprType.ZEROCONST)
+    e_z = Expression("0", ExprType.CONST, constname="0")
     e_x0 = Expression("x0", ExprType.VAR, varname="x0")
     e_x1 = Expression("x1", ExprType.VAR, varname="x1")
     e_x2 = Expression("x2", ExprType.VAR, varname="x2")
@@ -184,7 +185,7 @@ def test_operator_expressions(
 ) -> bool:
     sems = universe, interpretation, assignment
     leq = interpretation["<="]
-    e_z = Expression("0", ExprType.ZEROCONST)
+    e_z = Expression("0", ExprType.CONST, constname="0")
     e_x0 = Expression("x0", ExprType.VAR, varname="x0")
     e_x1 = Expression("x1", ExprType.VAR, varname="x1")
     e_x2 = Expression("x2", ExprType.VAR, varname="x2")
@@ -226,7 +227,7 @@ def test_quantification(
     y = var("y")
     z = var("z")
     w = var("w")
-    zero = zeroconst()
+    zero = const("0")
     reflexiveness = forall(x, x <= x)
     transitivity = forall(
         x,
