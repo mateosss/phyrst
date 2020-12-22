@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+# TODO: Binary relationships should be writed infix, but other functions and
+# relationships should support f(t1, ..., tn) writing format
+# TODO: Support functions
+
 from enum import Enum
 from functools import reduce
 from typing import Any, Dict, List, Optional, Union, cast
@@ -8,7 +12,9 @@ Element = int
 Universe = List[Element]
 Interpretation = Dict[str, Any]
 Assignment = Dict[str, Element]
-ExprType = Enum("ExprType", "CONST VAR LEQREL EQ AND OR IMPLIES IFF NOT EXISTS FORALL")
+ExprType = Enum(
+    "ExprType", "CONST VAR FUNC REL EQ AND OR IMPLIES IFF NOT EXISTS FORALL"
+)
 
 
 class Expression:
@@ -29,6 +35,7 @@ class Expression:
         subexp: Optional[Expression] = None,
         varname: Optional[str] = None,
         constname: Optional[str] = None,
+        relname: Optional[str] = None,
         quantifier_varname: Optional[str] = None,
     ) -> None:
         self.expression = expression
@@ -38,6 +45,7 @@ class Expression:
         self.subexp = subexp
         self.varname = varname
         self.constname = constname
+        self.relname = relname
         self.quantifier_varname = quantifier_varname
 
     def __call__(
@@ -52,17 +60,20 @@ class Expression:
         self.subexp = cast(Expression, self.subexp)
         self.varname = cast(str, self.varname)
         self.constname = cast(str, self.constname)
+        self.relname = cast(str, self.relname)
 
         # -> Element
         if self.exprtype is ExprType.CONST:
             return interpretation[self.constname]
         if self.exprtype is ExprType.VAR:
             return assignment[self.varname]
+        if self.exprtype is ExprType.FUNC:
+            raise NotImplementedError
         # -> bool
         if self.exprtype is ExprType.EQ:
             return self.left(*args) == self.right(*args)
-        if self.exprtype is ExprType.LEQREL:
-            return interpretation["<="](self.left(*args), self.right(*args))
+        if self.exprtype is ExprType.REL:
+            return interpretation[self.relname](self.left(*args), self.right(*args))
         if self.exprtype is ExprType.AND:
             return self.left(*args) and self.right(*args)
         if self.exprtype is ExprType.OR:
@@ -97,8 +108,13 @@ class Expression:
         return Expression(f"({self.expression} = {o.expression})", ExprType.EQ, self, o)
 
     def __le__(self, o: Expression) -> Expression:
+        # TODO: Maybe a bit too specific for posets
         return Expression(
-            f"({self.expression} <= {o.expression})", ExprType.LEQREL, self, o
+            f"({self.expression} <= {o.expression})",
+            ExprType.REL,
+            self,
+            o,
+            relname="<=",
         )
 
     def __and__(self, o: Expression) -> Expression:
@@ -161,7 +177,7 @@ def test_raw_expressions(
     e_zeqz = Expression("0 = 0", ExprType.EQ, e_z, e_z)
     e_x1eqz = Expression("x1 = 0", ExprType.EQ, e_x1, e_z)
     e_x1eqx2 = Expression("x1 = x2", ExprType.EQ, e_x1, e_x2)
-    e_x1leqx2 = Expression("x1 <= x2", ExprType.LEQREL, e_x1, e_x2)
+    e_x1leqx2 = Expression("x1 <= x2", ExprType.REL, e_x1, e_x2, relname="<=")
     e_complex = Expression("x1 = 0 or x1 <= x2", ExprType.OR, e_x1eqz, e_x1leqx2)
 
     x0: int = assignment["x0"]
