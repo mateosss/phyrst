@@ -1,2 +1,5 @@
 [MESSAGES CONTROL]
-disable=E1136, invalid-name
+disable =
+  unsubscriptable-object, # Optional[T] does not work yet
+  invalid-name, # One letter names improve readability in short scopes
+  fixme # TODOs in code are not problems
