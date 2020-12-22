@@ -1,7 +1,12 @@
 "This is a runnable usage of phyrst_order data types"
 
 from phyrst_order import Assignment, Element, Interpretation, Universe, forall, var
-from tests import test_operator_expressions, test_quantification, test_raw_expressions
+from tests import (
+    test_nary_names,
+    test_operator_expressions,
+    test_quantification,
+    test_raw_expressions,
+)
 
 
 def main() -> None:
@@ -38,6 +43,8 @@ def main() -> None:
     print(
         f"[Chain]\t𝔹⊨{custom_expression.expression}[𝑎⃗] ≡ {custom_expression(*chain_sems)}"
     )
+
+    test_nary_names()
 
 
 if __name__ == "__main__":

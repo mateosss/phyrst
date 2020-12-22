@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import Enum
 from functools import reduce
-from typing import Any, Dict, Iterable, Optional, TypeVar, Union, cast
+from typing import Any, Dict, Iterable, List, Optional, TypeVar, Union, cast
 
 # TODO: Binary relationships should be writed infix, but other functions and
 # relationships should support f(t1, ..., tn) writing format
@@ -15,7 +15,7 @@ Universe = Iterable[Element]
 Interpretation = Dict[str, Any]
 Assignment = Dict[str, Element]
 ExprType = Enum(
-    "ExprType", "CONST VAR FUNC REL EQ AND OR IMPLIES IFF NOT EXISTS FORALL"
+    "ExprType", "EMPTY CONST VAR FUNC REL EQ AND OR IMPLIES IFF NOT EXISTS FORALL"
 )
 
 
@@ -23,9 +23,7 @@ class Expression:
     "Represents an expression in first order logic, can be part of other expressions"
     expression: str
     exprtype: ExprType
-    left: Optional[Expression]
-    right: Optional[Expression]
-    subexp: Optional[Expression]
+    subexpressions: Optional[List[Expression]]
     varname: Optional[str]
     quantifier_varname: Optional[str]
 
@@ -33,22 +31,20 @@ class Expression:
         self,
         expression: str,
         exprtype: ExprType,
-        left: Optional[Expression] = None,
-        right: Optional[Expression] = None,
-        subexp: Optional[Expression] = None,
+        subexpressions: Optional[List[Expression]] = None,
         varname: Optional[str] = None,
         constname: Optional[str] = None,
         relname: Optional[str] = None,
+        funcname: Optional[str] = None,
         quantifier_varname: Optional[str] = None,
     ) -> None:
         self.expression = expression
         self.exprtype = exprtype
-        self.left = left
-        self.right = right
-        self.subexp = subexp
+        self.subexpressions = subexpressions
         self.varname = varname
         self.constname = constname
         self.relname = relname
+        self.funcname = funcname
         self.quantifier_varname = quantifier_varname
 
     def __call__(
@@ -58,12 +54,20 @@ class Expression:
         assignment: Assignment,
     ) -> Union[bool, Element]:
         args = universe, interpretation, assignment
-        self.left = cast(Expression, self.left)
-        self.right = cast(Expression, self.right)
-        self.subexp = cast(Expression, self.subexp)
         self.varname = cast(str, self.varname)
         self.constname = cast(str, self.constname)
         self.relname = cast(str, self.relname)
+        self.funcname = cast(str, self.funcname)
+
+        subexp = left = right = Expression.empty()
+        if self.subexpressions:
+            self.subexpressions = cast(List[Expression], self.subexpressions)
+            if len(self.subexpressions) == 2:
+                left, right = self.subexpressions
+            elif len(self.subexpressions) == 1:
+                subexp = self.subexpressions[0]
+            else:
+                raise Exception("Invalid subexpressions count")
 
         # -> Element
         if self.exprtype is ExprType.CONST:
@@ -71,28 +75,30 @@ class Expression:
         if self.exprtype is ExprType.VAR:
             return assignment[self.varname]
         if self.exprtype is ExprType.FUNC:
-            raise NotImplementedError
+            # TODO: Support for n-ary functions
+            return interpretation[self.funcname](left(*args), right(*args))
         # -> bool
         if self.exprtype is ExprType.EQ:
-            return self.left(*args) == self.right(*args)
+            return left(*args) == right(*args)
         if self.exprtype is ExprType.REL:
-            return interpretation[self.relname](self.left(*args), self.right(*args))
+            # TODO: Support for n-ary relations
+            return interpretation[self.relname](left(*args), right(*args))
         if self.exprtype is ExprType.AND:
-            return self.left(*args) and self.right(*args)
+            return left(*args) and right(*args)
         if self.exprtype is ExprType.OR:
-            return self.left(*args) or self.right(*args)
+            return left(*args) or right(*args)
         if self.exprtype is ExprType.IMPLIES:
-            return not self.left(*args) or self.right(*args)
+            return not left(*args) or right(*args)
         if self.exprtype is ExprType.IFF:
-            return self.left(*args) == self.right(*args)
+            return left(*args) == right(*args)
         if self.exprtype is ExprType.NOT:
-            return not self.subexp(*args)
+            return not subexp(*args)
         if self.exprtype is ExprType.EXISTS:
 
             def f(anyprevious, element):
                 a = dict(**assignment)
                 a[self.quantifier_varname] = element
-                return anyprevious or self.subexp(universe, interpretation, a)
+                return anyprevious or subexp(universe, interpretation, a)
 
             return reduce(f, universe, False)
 
@@ -101,45 +107,51 @@ class Expression:
             def f(allprevious, element):  # type: ignore # pylint: disable=function-redefined
                 a = dict(**assignment)
                 a[self.quantifier_varname] = element
-                return allprevious and self.subexp(universe, interpretation, a)
+                return allprevious and subexp(universe, interpretation, a)
 
             return reduce(f, universe, True)
+
+        if self.exprtype is ExprType.EMPTY:
+            raise Exception("Trying to evaluate an empty expression")
 
         raise Exception("Invalid semantics reached")
 
     def __eq__(self, o: Expression) -> Expression:  # type: ignore
-        return Expression(f"({self.expression} = {o.expression})", ExprType.EQ, self, o)
+        return Expression(
+            f"({self.expression} = {o.expression})", ExprType.EQ, [self, o]
+        )
 
     def __le__(self, o: Expression) -> Expression:
         # TODO: Maybe a bit too specific for posets
         return Expression(
             f"({self.expression} <= {o.expression})",
             ExprType.REL,
-            self,
-            o,
+            [self, o],
             relname="<=",
         )
 
     def __and__(self, o: Expression) -> Expression:
         return Expression(
-            f"({self.expression} ∧ {o.expression})", ExprType.AND, self, o
+            f"({self.expression} ∧ {o.expression})", ExprType.AND, [self, o]
         )
 
     def __or__(self, o: Expression) -> Expression:
-        return Expression(f"({self.expression} ∨ {o.expression})", ExprType.OR, self, o)
+        return Expression(
+            f"({self.expression} ∨ {o.expression})", ExprType.OR, [self, o]
+        )
 
     def __rshift__(self, o: Expression) -> Expression:
         return Expression(
-            f"({self.expression} ⇒ {o.expression})", ExprType.IMPLIES, self, o
+            f"({self.expression} ⇒ {o.expression})", ExprType.IMPLIES, [self, o]
         )
 
     def __pow__(self, o: Expression) -> Expression:
         return Expression(
-            f"({self.expression} ⇔ {o.expression})", ExprType.IFF, self, o
+            f"({self.expression} ⇔ {o.expression})", ExprType.IFF, [self, o]
         )
 
     def __invert__(self):
-        return Expression(f"¬{self.expression}", ExprType.NOT, subexp=self)
+        return Expression(f"¬{self.expression}", ExprType.NOT, [self])
 
     def exists(self, qvar: Expression) -> Expression:
         "Returns existencially quantified Expression which has self as subexpression"
@@ -147,7 +159,7 @@ class Expression:
         return Expression(
             f"∃{qvar.varname}{self.expression}",
             ExprType.EXISTS,
-            subexp=self,
+            [self],
             quantifier_varname=qvar.varname,
         )
 
@@ -157,9 +169,14 @@ class Expression:
         return Expression(
             f"∀{qvar.varname}{self.expression}",
             ExprType.FORALL,
-            subexp=self,
+            [self],
             quantifier_varname=qvar.varname,
         )
+
+    @staticmethod
+    def empty() -> Expression:
+        "Returns an object representing an empty expression"
+        return Expression("", ExprType.EMPTY)
 
     def __str__(self) -> str:
         return self.expression
