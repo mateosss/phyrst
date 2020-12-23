@@ -132,6 +132,7 @@ def test_nary_names() -> bool:
     universe: Universe = range(42, 53)
     assignment: Assignment = {}
     interpretation: Interpretation = {
+        "clamp": lambda x, a, b: max(a, min(x, b)),
         "max": max,
         "min": min,
         "<=": lambda x, y: x <= y,
@@ -144,10 +145,23 @@ def test_nary_names() -> bool:
     maxx = lambda a, b: Expression(
         f"max({b.expression}, {a.expression})", ExprType.FUNC, [a, b], "max"
     )
-    x, y = var("x"), var("y")
+    clamp = lambda x, a, b: Expression(
+        f"clamp({x}, {a}, {b})", ExprType.FUNC, [x, a, b], "clamp"
+    )
+
+    x, y, z = var("x"), var("y"), var("z")
     minworks = forall(x, forall(y, (minn(x, y) <= x) & (minn(x, y) <= y)))
     maxworks = forall(x, forall(y, (x <= maxx(x, y)) & (y <= maxx(x, y))))
+    clampworks = forall(x, forall(y, forall(z, clamp(x, y, z) == maxx(y, minn(x, z)))))
+    clampbounds = forall(
+        x,
+        forall(
+            y, forall(z, (y <= z) >> ((clamp(x, y, z) <= z) & (y <= clamp(x, y, z))))
+        ),
+    )
     assert minworks(*sems)
     assert maxworks(*sems)
+    assert clampworks(*sems)
+    assert clampbounds(*sems)
     return True
 

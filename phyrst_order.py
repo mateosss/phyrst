@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import Enum
 from functools import reduce
-from typing import Any, Dict, Iterable, List, Optional, TypeVar, Union, cast
+from typing import Any, Dict, Iterable, Optional, Sequence, TypeVar, Union, cast
 
 # TODO: Binary relationships should be writed infix, but other functions and
 # relationships should support f(t1, ..., tn) writing format
@@ -23,14 +23,14 @@ class Expression:
     "Represents an expression in first order logic, can be part of other expressions"
     expression: str
     exprtype: ExprType
-    subexpressions: Optional[List[Expression]]  # E.g. A & B => subexpressions = [A, B]
+    subexpressions: Sequence[Expression]  # E.g. A & B => subexpressions = [A, B]
     name: Optional[str]  # name of const / rel / func / var / quantified var
 
     def __init__(
         self,
         expression: str,
         exprtype: ExprType,
-        subexpressions: Optional[List[Expression]] = None,
+        subexpressions: Sequence[Expression] = (),
         name: Optional[str] = None,
     ) -> None:
         self.expression = expression
@@ -48,14 +48,10 @@ class Expression:
         self.name = cast(str, self.name)
 
         subexp = left = right = Expression.empty()
-        if self.subexpressions:
-            self.subexpressions = cast(List[Expression], self.subexpressions)
-            if len(self.subexpressions) == 2:
-                left, right = self.subexpressions
-            elif len(self.subexpressions) == 1:
-                subexp = self.subexpressions[0]
-            else:
-                raise Exception("Invalid subexpressions count")
+        if len(self.subexpressions) == 2:
+            left, right = self.subexpressions
+        elif len(self.subexpressions) == 1:
+            subexp = self.subexpressions[0]
 
         # -> Element
         if self.exprtype is ExprType.CONST:
@@ -63,13 +59,12 @@ class Expression:
         if self.exprtype is ExprType.VAR:
             return assignment[self.name]
         if self.exprtype is ExprType.FUNC:
-            return interpretation[self.name](left(*args), right(*args))
+            return interpretation[self.name](*[t(*args) for t in self.subexpressions])
         # -> bool
         if self.exprtype is ExprType.EQ:
             return left(*args) == right(*args)
         if self.exprtype is ExprType.REL:
-            # TODO: Support for n-ary relations
-            return interpretation[self.name](left(*args), right(*args))
+            return interpretation[self.name](*[t(*args) for t in self.subexpressions])
         if self.exprtype is ExprType.AND:
             return left(*args) and right(*args)
         if self.exprtype is ExprType.OR:
