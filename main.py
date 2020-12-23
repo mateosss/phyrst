@@ -2,6 +2,7 @@
 
 from phyrst_order import Assignment, Element, Interpretation, Universe, forall, var
 from tests import (
+    test_boole_algebra_model,
     test_nary_names,
     test_operator_expressions,
     test_quantification,
@@ -43,6 +44,7 @@ def main() -> None:
     print(f"[Chain]\t𝔹⊨{custom_expression}[𝑎⃗] ≡ {custom_expression(*chain_sems)}")
 
     test_nary_names()
+    test_boole_algebra_model()
 
 
 if __name__ == "__main__":

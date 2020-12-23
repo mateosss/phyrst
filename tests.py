@@ -9,6 +9,8 @@ from phyrst_order import (
     Expression,
     ExprType,
     Interpretation,
+    Model,
+    Theory,
     Type,
     Universe,
     const,
@@ -145,7 +147,6 @@ def test_nary_names() -> bool:
     sems = universe, interpretation, assignment
 
     ttype = Type(["0"], ["clamp", "max", "min"], ["<="], arities)
-    # pylint: disable=unbalanced-tuple-unpacking
     o, clamp, maxx, minn, leq = Expression.expr_mappings(ttype)
     zero: Expression = cast(Expression, o)
 
@@ -165,5 +166,65 @@ def test_nary_names() -> bool:
     assert clampworks(*sems)
     assert clampbounds(*sems)
     assert zmin(*sems)
+
+    return True
+
+
+def test_boole_algebra_model() -> bool:
+    "This test builds a boolean algebra model from the ground up and checks some of its properties"
+
+    # Type definition
+    constnames = ["0", "1"]
+    funcnames = ["s", "i", "c"]
+    relnames = ["<="]
+    arities = {"s": 2, "i": 2, "c": 1, "<=": 2}
+    ttype = Type(constnames, funcnames, relnames, arities)
+    zero, one, s, i, c, leq = Expression.expr_mappings(ttype)
+
+    # Theory definition
+    x, y, z = var("x"), var("y"), var("z")
+    reflexivity = forall(x, x <= x)
+    transitivity = forall(x, forall(y, forall(z, ((x <= z) & (z <= y)) >> (x <= y))))
+    antisimetry = forall(x, forall(y, ((x <= y) & (y <= x)) >> (x == y)))
+    poset_axioms = [reflexivity, transitivity, antisimetry]
+    sisbound = forall(x, forall(y, (x <= s(x, y)) & (y <= s(x, y))))
+    slowbnd = forall(x, forall(y, forall(z, ((x <= z) & (y <= z)) >> (s(x, y) <= z))))
+    iisbound = forall(x, forall(y, (i(x, y) <= x) & (i(x, y) <= y)))
+    iuppbnd = forall(x, forall(y, forall(z, ((z <= x) & (z <= y)) >> (z <= i(x, y)))))
+    ret_axioms = [sisbound, slowbnd, iisbound, iuppbnd]
+    min0 = forall(x, s(zero, x) == x)
+    max1 = forall(x, s(one, x) == one)
+    scomplement = forall(x, s(x, c(x)) == one)
+    icomplement = forall(x, i(x, c(x)) == zero)
+    dist1 = forall(x, forall(y, forall(z, i(x, s(y, z)) == s(i(x, y), i(x, z)))))
+    boole_axioms = [min0, max1, scomplement, icomplement, dist1]
+    axioms = poset_axioms + ret_axioms + boole_axioms
+    theory = Theory(axioms, ttype)
+
+    # Model definition
+    universe: Universe = [set(), {1}, {2}, {3}, {1, 2}, {1, 3}, {2, 3}, {1, 2, 3}]
+    interpretation: Interpretation = {
+        "0": set(),
+        "1": {1, 2, 3},
+        "s": lambda x, y: x | y,
+        "i": lambda x, y: x & y,
+        "c": lambda x: x ^ {1, 2, 3},
+        "<=": lambda x, y: x.issubset(y),
+    }
+    model = Model(theory, universe, interpretation)
+
+    # Check a valid sentences
+    dist2 = forall(x, forall(y, forall(z, s(x, i(y, z)) == i(s(x, y), s(x, z)))))
+    assert model.eval(dist2)
+
+    # Check a valid formula given an assignment
+    assignment: Assignment = {"x1": {1}, "x2": {2}, "x12": {1, 2}}
+    x1, x2, x12 = var("x1"), var("x2"), var("x12")
+    phi = s(x1, x2) == x12
+    assert model.eval(phi, assignment)
+
+    # Check the value of a term given an assignment
+    t = i(x1, s(x1, x2))
+    assert model.eval(t, assignment) == {1}
 
     return True

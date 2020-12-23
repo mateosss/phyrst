@@ -199,10 +199,6 @@ class Expression:
         "Returns an object representing an empty expression"
         return Expression("", ExprType.EMPTY)
 
-    # # def __call__(self, *args: Expression) -> Expression:
-    # #         assert self.exprtype in [ExprType.FUNC, ExprType.REL]
-    # #         assert cantidad de args coincide con nombre de mi func
-
     @staticmethod
     def expr_mappings(ttype: Type) -> List[Callable]:
         """Returns for each name in the type an object that is a syntax sugar
@@ -236,3 +232,73 @@ const = lambda constname: Expression(constname, ExprType.CONST, name=constname)
 var = lambda varname: Expression(varname, ExprType.VAR, name=varname)
 exists = lambda varname, exp: exp.exists(varname)
 forall = lambda varname, exp: exp.forall(varname)
+
+
+class Theory:
+    """Defines a first order theory. A Model is model of this theory if it
+    is of the same type and satisfies its axioms"""
+
+    axioms: List[Expression]
+    ttype: Type  # ttype instead of type for builtin python's type
+
+    def __init__(
+        self,
+        axioms: List[Expression],
+        ttype: Type,
+    ) -> None:
+        self.axioms = axioms
+        self.ttype = ttype
+
+
+class Model:
+    """Defines a first order model of a theory. A model gives a universe of
+    elements and the interpretations of its theory's type's constants.
+    It should also satisfy all the axioms from its theory"""
+
+    theory: Theory
+    universe: Universe
+    interpretation: Interpretation
+
+    def __init__(
+        self, theory: Theory, universe: Universe, interpretation: Interpretation
+    ) -> None:
+        self.universe = universe
+        self.theory = theory
+        self.interpretation = interpretation
+
+        self._check_axioms()
+        self._check_interpretation()
+
+    def _check_axioms(self) -> bool:
+        "Check model conforms to theory axioms"
+        for axiom in self.theory.axioms:
+            assert self.eval(axiom), axiom
+        return True
+
+    def _check_interpretation(self):
+        "Check model interpretation comforms to theory type"
+        ttype = self.theory.ttype
+        interpretation = self.interpretation
+
+        cnames = ttype.constnames
+        fnames = ttype.funcnames
+        rnames = ttype.relnames
+        arities = ttype.arities
+
+        tnames = cnames + fnames + rnames
+        assert all(tname in interpretation for tname in tnames)
+        assert all(iname in tnames for iname in interpretation)
+
+        for name in fnames + rnames:
+            iargcount = interpretation[name].__code__.co_argcount
+            assert iargcount == arities[name], f"Incorrect arity of {name}"
+
+        return True
+
+    def eval(
+        self, expr: Expression, assignment: Optional[Dict[str, Element]] = None
+    ) -> Union[Element, bool]:
+        "Evaluates an expression from ttype in this model given an assignment of variables"
+        assignment = assignment or {}
+        sems = self.universe, self.interpretation, assignment
+        return expr(*sems)
