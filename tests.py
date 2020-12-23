@@ -213,15 +213,19 @@ def test_boole_algebra_model() -> bool:
     }
     model = Model(theory, universe, interpretation)
 
-    # Check a valid sentences
+    # Check valid sentences
     dist2 = forall(x, forall(y, forall(z, s(x, i(y, z)) == i(s(x, y), s(x, z)))))
     assert model.eval(dist2)
 
-    # Check a valid formula given an assignment
+    # Define an assignment and its variables
     assignment: Assignment = {"x1": {1}, "x2": {2}, "x12": {1, 2}}
     x1, x2, x12 = var("x1"), var("x2"), var("x12")
+
+    # Check valid formulas given an assignment
     phi = s(x1, x2) == x12
+    psi = leq(x1, x12)
     assert model.eval(phi, assignment)
+    assert model.eval(psi, assignment)
 
     # Check the value of a term given an assignment
     t = i(x1, s(x1, x2))

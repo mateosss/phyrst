@@ -162,12 +162,10 @@ class Expression:
 
         raise Exception("Invalid semantics reached")
 
+    # Expression building operators
+
     def __eq__(self, o: Expression) -> Expression:  # type: ignore
         return Expression(f"({self} = {o})", ExprType.EQ, [self, o])
-
-    def __le__(self, o: Expression) -> Expression:
-        # TODO: Maybe a bit too specific for posets
-        return Expression(f"({self} ≤ {o})", ExprType.REL, [self, o], "<=")
 
     def __and__(self, o: Expression) -> Expression:
         return Expression(f"({self} ∧ {o})", ExprType.AND, [self, o])
@@ -193,6 +191,27 @@ class Expression:
         "Returns universally quantified Expression which has self as subexpression"
         assert qvar.exprtype is ExprType.VAR
         return Expression(f"∀{qvar.name}{self}", ExprType.FORALL, [self], qvar.name)
+
+    # Useful (but not necessarily generic) operators
+
+    def __ne__(self, o: Expression) -> Expression:  # type: ignore
+        return ~(self == o)
+
+    # Poset operators
+
+    def __le__(self, o: Expression) -> Expression:
+        return Expression(f"({self} ≤ {o})", ExprType.REL, [self, o], "<=")
+
+    def __lt__(self, o: Expression) -> Expression:
+        return (self <= o) & (self != o)
+
+    def __ge__(self, o: Expression) -> Expression:
+        return o <= self
+
+    def __gt__(self, o: Expression) -> Expression:
+        return o < self
+
+    # Other utility methods
 
     @staticmethod
     def empty() -> Expression:
