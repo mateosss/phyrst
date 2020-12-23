@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Tuple,
     TypeVar,
     Union,
     cast,
@@ -24,6 +25,62 @@ Assignment = Dict[str, Element]
 ExprType = Enum(
     "ExprType", "EMPTY CONST VAR FUNC REL EQ AND OR IMPLIES IFF NOT EXISTS FORALL"
 )
+
+
+class Type:
+    "Defines the names and arities of a first order type"
+    constnames: List[str]
+    funcnames: List[str]
+    relnames: List[str]
+    arities: Dict[str, int]
+
+    def __init__(
+        self,
+        constnames: List[str],
+        funcnames: List[str],
+        relnames: List[str],
+        arities: Dict[str, int],
+    ) -> None:
+        self.constnames = constnames
+        self.funcnames = funcnames
+        self.relnames = relnames
+        self.arities = arities
+
+        # Arities is suryective over funcnames + relnames
+        assert all((name in arities) for name in funcnames + relnames)
+        assert all(
+            name in funcnames + relnames and arity > 0
+            for name, arity in arities.items()
+        )
+
+        # All different names
+        names = constnames + funcnames + relnames
+        assert all(
+            name != oname
+            for i, name in enumerate(names[:-1])
+            for oname in names[i + 1 :]
+        )
+
+    @property
+    def names(self) -> List[str]:
+        "Returns all type names"
+        return self.constnames + self.funcnames + self.relnames
+
+    @property
+    def name_types(self) -> Iterable[Tuple[str, ExprType]]:
+        "Generator that for all names gives a tuple like (name, ExprType)"
+        for name in self.names:
+            yield (name, self.name_type(name))
+
+    def name_type(self, name: str) -> ExprType:
+        "Returns ExprType.CONST/FUNC/REL for a name"
+        if name in self.constnames:
+            return ExprType.CONST
+        if name in self.funcnames:
+            return ExprType.FUNC
+        if name in self.relnames:
+            return ExprType.REL
+        raise Exception(f"{name=} is not a valid name for this type")
 
 
 class Expression:
@@ -147,19 +204,17 @@ class Expression:
     # #         assert cantidad de args coincide con nombre de mi func
 
     @staticmethod
-    def from_interpretation(
-        interpretation: Interpretation, types: Sequence[ExprType]
-    ) -> List[Callable]:
-        # TODO: This doesn't really need the interpretation but the type
-        """Returns for each interpretation name a function that can be used
-        to write first order expressions"""
+    def expr_mappings(ttype: Type) -> List[Callable]:
+        """Returns for each name in the type an object that is a syntax sugar
+        for writing first order expressions in python. For FUNCs and RELs
+        a function that when evaluated fun(t1, ..., tn) builds the
+        appropiate expression. For CONSTs a const expression."""
 
-        interps: List[Union[Callable, Expression]] = []
-        for (name, _), ntype in zip(interpretation.items(), types):
-            # arity = interpreted.__code__.co_argcount
+        mappings: List[Callable] = []
+        for name, ntype in ttype.name_types:
             if ntype is ExprType.CONST:
                 nconst = Expression(name, ExprType.CONST, name=name)
-                interps.append(nconst)
+                mappings.append(nconst)
             elif ntype in [ExprType.FUNC, ExprType.REL]:
                 nrelfunc = lambda *subexprs, name=name, ntype=ntype: Expression(
                     f"{name}({', '.join(str(t) for t in subexprs)})",
@@ -167,11 +222,11 @@ class Expression:
                     subexprs,
                     name,
                 )
-                interps.append(nrelfunc)
+                mappings.append(nrelfunc)
             else:
                 raise Exception(f"Invalid {ntype=}")
 
-        return interps
+        return mappings
 
     def __str__(self) -> str:
         return self.expression

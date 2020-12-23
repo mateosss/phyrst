@@ -9,6 +9,7 @@ from phyrst_order import (
     Expression,
     ExprType,
     Interpretation,
+    Type,
     Universe,
     const,
     exists,
@@ -140,12 +141,12 @@ def test_nary_names() -> bool:
         "min": min,
         "<=": lambda x, y: x <= y,
     }
+    arities = {"clamp": 3, "max": 2, "min": 2, "<=": 2}
     sems = universe, interpretation, assignment
 
-    # TODO: itypes should not be necessary for from_intepretation
-    itypes = (ExprType.CONST, ExprType.FUNC, ExprType.FUNC, ExprType.FUNC, ExprType.REL)
+    ttype = Type(["0"], ["clamp", "max", "min"], ["<="], arities)
     # pylint: disable=unbalanced-tuple-unpacking
-    o, clamp, maxx, minn, leq = Expression.from_interpretation(interpretation, itypes)
+    o, clamp, maxx, minn, leq = Expression.expr_mappings(ttype)
     zero: Expression = cast(Expression, o)
 
     x, y, z = var("x"), var("y"), var("z")

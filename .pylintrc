@@ -2,4 +2,5 @@
 disable =
   unsubscriptable-object, # Optional[T] does not work yet
   invalid-name, # One letter names improve readability in short scopes
-  fixme # TODOs in code are not problems
+  fixme, # TODOs in code are not problems
+  comparison-with-itself # The comparisson operators semantics are peculiar
