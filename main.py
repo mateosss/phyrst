@@ -39,10 +39,8 @@ def main() -> None:
 
     x, y = var("x"), var("y")
     custom_expression = forall(x, forall(y, (x <= y) | (y <= x)))
-    print(f"[V]\t𝔸⊨{custom_expression.expression}[𝑎⃗] ≡ {custom_expression(*v_sems)}")
-    print(
-        f"[Chain]\t𝔹⊨{custom_expression.expression}[𝑎⃗] ≡ {custom_expression(*chain_sems)}"
-    )
+    print(f"[V]\t𝔸⊨{custom_expression}[𝑎⃗] ≡ {custom_expression(*v_sems)}")
+    print(f"[Chain]\t𝔹⊨{custom_expression}[𝑎⃗] ≡ {custom_expression(*chain_sems)}")
 
     test_nary_names()
 

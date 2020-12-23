@@ -139,12 +139,8 @@ def test_nary_names() -> bool:
     }
     sems = universe, interpretation, assignment
 
-    minn = lambda a, b: Expression(
-        f"min({b.expression}, {a.expression})", ExprType.FUNC, [a, b], "min"
-    )
-    maxx = lambda a, b: Expression(
-        f"max({b.expression}, {a.expression})", ExprType.FUNC, [a, b], "max"
-    )
+    minn = lambda a, b: Expression(f"min({b}, {a})", ExprType.FUNC, [a, b], "min")
+    maxx = lambda a, b: Expression(f"max({b}, {a})", ExprType.FUNC, [a, b], "max")
     clamp = lambda x, a, b: Expression(
         f"clamp({x}, {a}, {b})", ExprType.FUNC, [x, a, b], "clamp"
     )

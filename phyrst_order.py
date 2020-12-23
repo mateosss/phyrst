@@ -99,52 +99,36 @@ class Expression:
         raise Exception("Invalid semantics reached")
 
     def __eq__(self, o: Expression) -> Expression:  # type: ignore
-        return Expression(
-            f"({self.expression} = {o.expression})", ExprType.EQ, [self, o]
-        )
+        return Expression(f"({self} = {o})", ExprType.EQ, [self, o])
 
     def __le__(self, o: Expression) -> Expression:
         # TODO: Maybe a bit too specific for posets
-        return Expression(
-            f"({self.expression} <= {o.expression})", ExprType.REL, [self, o], "<="
-        )
+        return Expression(f"({self} <= {o})", ExprType.REL, [self, o], "<=")
 
     def __and__(self, o: Expression) -> Expression:
-        return Expression(
-            f"({self.expression} ∧ {o.expression})", ExprType.AND, [self, o]
-        )
+        return Expression(f"({self} ∧ {o})", ExprType.AND, [self, o])
 
     def __or__(self, o: Expression) -> Expression:
-        return Expression(
-            f"({self.expression} ∨ {o.expression})", ExprType.OR, [self, o]
-        )
+        return Expression(f"({self} ∨ {o})", ExprType.OR, [self, o])
 
     def __rshift__(self, o: Expression) -> Expression:
-        return Expression(
-            f"({self.expression} ⇒ {o.expression})", ExprType.IMPLIES, [self, o]
-        )
+        return Expression(f"({self} ⇒ {o})", ExprType.IMPLIES, [self, o])
 
     def __pow__(self, o: Expression) -> Expression:
-        return Expression(
-            f"({self.expression} ⇔ {o.expression})", ExprType.IFF, [self, o]
-        )
+        return Expression(f"({self} ⇔ {o})", ExprType.IFF, [self, o])
 
     def __invert__(self):
-        return Expression(f"¬{self.expression}", ExprType.NOT, [self])
+        return Expression(f"¬{self}", ExprType.NOT, [self])
 
     def exists(self, qvar: Expression) -> Expression:
         "Returns existencially quantified Expression which has self as subexpression"
         assert qvar.exprtype is ExprType.VAR
-        return Expression(
-            f"∃{qvar.name}{self.expression}", ExprType.EXISTS, [self], qvar.name
-        )
+        return Expression(f"∃{qvar.name}{self}", ExprType.EXISTS, [self], qvar.name)
 
     def forall(self, qvar: Expression) -> Expression:
         "Returns universally quantified Expression which has self as subexpression"
         assert qvar.exprtype is ExprType.VAR
-        return Expression(
-            f"∀{qvar.name}{self.expression}", ExprType.FORALL, [self], qvar.name
-        )
+        return Expression(f"∀{qvar.name}{self}", ExprType.FORALL, [self], qvar.name)
 
     @staticmethod
     def empty() -> Expression:
