@@ -20,14 +20,14 @@ def test_raw_expressions(
 ) -> bool:
     "Tests expressions constructed from the ground up as regular classes"
     sems = universe, interpretation, assignment
-    e_z = Expression("0", ExprType.CONST, constname="0")
-    e_x0 = Expression("x0", ExprType.VAR, varname="x0")
-    e_x1 = Expression("x1", ExprType.VAR, varname="x1")
-    e_x2 = Expression("x2", ExprType.VAR, varname="x2")
+    e_z = Expression("0", ExprType.CONST, name="0")
+    e_x0 = Expression("x0", ExprType.VAR, name="x0")
+    e_x1 = Expression("x1", ExprType.VAR, name="x1")
+    e_x2 = Expression("x2", ExprType.VAR, name="x2")
     e_zeqz = Expression("0 = 0", ExprType.EQ, [e_z, e_z])
     e_x1eqz = Expression("x1 = 0", ExprType.EQ, [e_x1, e_z])
     e_x1eqx2 = Expression("x1 = x2", ExprType.EQ, [e_x1, e_x2])
-    e_x1leqx2 = Expression("x1 <= x2", ExprType.REL, [e_x1, e_x2], relname="<=")
+    e_x1leqx2 = Expression("x1 <= x2", ExprType.REL, [e_x1, e_x2], "<=")
     e_complex = Expression("x1 = 0 or x1 <= x2", ExprType.OR, [e_x1eqz, e_x1leqx2])
 
     x0: int = assignment["x0"]
@@ -52,10 +52,10 @@ def test_operator_expressions(
     "Tests expressions generated through operator chaining"
     sems = universe, interpretation, assignment
     leq = interpretation["<="]
-    e_z = Expression("0", ExprType.CONST, constname="0")
-    e_x0 = Expression("x0", ExprType.VAR, varname="x0")
-    e_x1 = Expression("x1", ExprType.VAR, varname="x1")
-    e_x2 = Expression("x2", ExprType.VAR, varname="x2")
+    e_z = Expression("0", ExprType.CONST, name="0")
+    e_x0 = Expression("x0", ExprType.VAR, name="x0")
+    e_x1 = Expression("x1", ExprType.VAR, name="x1")
+    e_x2 = Expression("x2", ExprType.VAR, name="x2")
 
     e_zeqz = e_z == e_z
     e_x1eqz = e_x1 == e_z
@@ -129,7 +129,7 @@ def test_quantification(
 
 def test_nary_names() -> bool:
     "Tests expressions with n-ary functions"
-    universe: Universe = [i for i in range(42, 53)]
+    universe: Universe = range(42, 53)
     assignment: Assignment = {}
     interpretation: Interpretation = {
         "max": max,
@@ -139,10 +139,10 @@ def test_nary_names() -> bool:
     sems = universe, interpretation, assignment
 
     minn = lambda a, b: Expression(
-        f"min({b.expression}, {a.expression})", ExprType.FUNC, [a, b], funcname="min"
+        f"min({b.expression}, {a.expression})", ExprType.FUNC, [a, b], "min"
     )
     maxx = lambda a, b: Expression(
-        f"max({b.expression}, {a.expression})", ExprType.FUNC, [a, b], funcname="max"
+        f"max({b.expression}, {a.expression})", ExprType.FUNC, [a, b], "max"
     )
     x, y = var("x"), var("y")
     minworks = forall(x, forall(y, (minn(x, y) <= x) & (minn(x, y) <= y)))

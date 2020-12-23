@@ -23,29 +23,20 @@ class Expression:
     "Represents an expression in first order logic, can be part of other expressions"
     expression: str
     exprtype: ExprType
-    subexpressions: Optional[List[Expression]]
-    varname: Optional[str]
-    quantifier_varname: Optional[str]
+    subexpressions: Optional[List[Expression]]  # E.g. A & B => subexpressions = [A, B]
+    name: Optional[str]  # name of const / rel / func / var / quantified var
 
     def __init__(
         self,
         expression: str,
         exprtype: ExprType,
         subexpressions: Optional[List[Expression]] = None,
-        varname: Optional[str] = None,
-        constname: Optional[str] = None,
-        relname: Optional[str] = None,
-        funcname: Optional[str] = None,
-        quantifier_varname: Optional[str] = None,
+        name: Optional[str] = None,
     ) -> None:
         self.expression = expression
         self.exprtype = exprtype
         self.subexpressions = subexpressions
-        self.varname = varname
-        self.constname = constname
-        self.relname = relname
-        self.funcname = funcname
-        self.quantifier_varname = quantifier_varname
+        self.name = name
 
     def __call__(
         self: Expression,
@@ -54,10 +45,7 @@ class Expression:
         assignment: Assignment,
     ) -> Union[bool, Element]:
         args = universe, interpretation, assignment
-        self.varname = cast(str, self.varname)
-        self.constname = cast(str, self.constname)
-        self.relname = cast(str, self.relname)
-        self.funcname = cast(str, self.funcname)
+        self.name = cast(str, self.name)
 
         subexp = left = right = Expression.empty()
         if self.subexpressions:
@@ -71,18 +59,17 @@ class Expression:
 
         # -> Element
         if self.exprtype is ExprType.CONST:
-            return interpretation[self.constname]
+            return interpretation[self.name]
         if self.exprtype is ExprType.VAR:
-            return assignment[self.varname]
+            return assignment[self.name]
         if self.exprtype is ExprType.FUNC:
-            # TODO: Support for n-ary functions
-            return interpretation[self.funcname](left(*args), right(*args))
+            return interpretation[self.name](left(*args), right(*args))
         # -> bool
         if self.exprtype is ExprType.EQ:
             return left(*args) == right(*args)
         if self.exprtype is ExprType.REL:
             # TODO: Support for n-ary relations
-            return interpretation[self.relname](left(*args), right(*args))
+            return interpretation[self.name](left(*args), right(*args))
         if self.exprtype is ExprType.AND:
             return left(*args) and right(*args)
         if self.exprtype is ExprType.OR:
@@ -97,7 +84,7 @@ class Expression:
 
             def f(anyprevious, element):
                 a = dict(**assignment)
-                a[self.quantifier_varname] = element
+                a[self.name] = element
                 return anyprevious or subexp(universe, interpretation, a)
 
             return reduce(f, universe, False)
@@ -106,7 +93,7 @@ class Expression:
 
             def f(allprevious, element):  # type: ignore # pylint: disable=function-redefined
                 a = dict(**assignment)
-                a[self.quantifier_varname] = element
+                a[self.name] = element
                 return allprevious and subexp(universe, interpretation, a)
 
             return reduce(f, universe, True)
@@ -124,10 +111,7 @@ class Expression:
     def __le__(self, o: Expression) -> Expression:
         # TODO: Maybe a bit too specific for posets
         return Expression(
-            f"({self.expression} <= {o.expression})",
-            ExprType.REL,
-            [self, o],
-            relname="<=",
+            f"({self.expression} <= {o.expression})", ExprType.REL, [self, o], "<="
         )
 
     def __and__(self, o: Expression) -> Expression:
@@ -157,20 +141,14 @@ class Expression:
         "Returns existencially quantified Expression which has self as subexpression"
         assert qvar.exprtype is ExprType.VAR
         return Expression(
-            f"∃{qvar.varname}{self.expression}",
-            ExprType.EXISTS,
-            [self],
-            quantifier_varname=qvar.varname,
+            f"∃{qvar.name}{self.expression}", ExprType.EXISTS, [self], qvar.name
         )
 
     def forall(self, qvar: Expression) -> Expression:
         "Returns universally quantified Expression which has self as subexpression"
         assert qvar.exprtype is ExprType.VAR
         return Expression(
-            f"∀{qvar.varname}{self.expression}",
-            ExprType.FORALL,
-            [self],
-            quantifier_varname=qvar.varname,
+            f"∀{qvar.name}{self.expression}", ExprType.FORALL, [self], qvar.name
         )
 
     @staticmethod
@@ -182,7 +160,7 @@ class Expression:
         return self.expression
 
 
-const = lambda constname: Expression(constname, ExprType.CONST, constname=constname)
-var = lambda varname: Expression(varname, ExprType.VAR, varname=varname)
+const = lambda constname: Expression(constname, ExprType.CONST, name=constname)
+var = lambda varname: Expression(varname, ExprType.VAR, name=varname)
 exists = lambda varname, exp: exp.exists(varname)
 forall = lambda varname, exp: exp.forall(varname)
