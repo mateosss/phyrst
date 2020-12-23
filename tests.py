@@ -2,6 +2,8 @@
 
 # TODO: These tests may be too specific for posets as they use the <= operator
 
+from typing import cast
+
 from phyrst_order import (
     Assignment,
     Expression,
@@ -132,6 +134,7 @@ def test_nary_names() -> bool:
     universe: Universe = range(42, 53)
     assignment: Assignment = {}
     interpretation: Interpretation = {
+        "0": min(universe),
         "clamp": lambda x, a, b: max(a, min(x, b)),
         "max": max,
         "min": min,
@@ -139,15 +142,15 @@ def test_nary_names() -> bool:
     }
     sems = universe, interpretation, assignment
 
-    minn = lambda a, b: Expression(f"min({b}, {a})", ExprType.FUNC, [a, b], "min")
-    maxx = lambda a, b: Expression(f"max({b}, {a})", ExprType.FUNC, [a, b], "max")
-    clamp = lambda x, a, b: Expression(
-        f"clamp({x}, {a}, {b})", ExprType.FUNC, [x, a, b], "clamp"
-    )
+    # TODO: itypes should not be necessary for from_intepretation
+    itypes = (ExprType.CONST, ExprType.FUNC, ExprType.FUNC, ExprType.FUNC, ExprType.REL)
+    # pylint: disable=unbalanced-tuple-unpacking
+    o, clamp, maxx, minn, leq = Expression.from_interpretation(interpretation, itypes)
+    zero: Expression = cast(Expression, o)
 
     x, y, z = var("x"), var("y"), var("z")
     minworks = forall(x, forall(y, (minn(x, y) <= x) & (minn(x, y) <= y)))
-    maxworks = forall(x, forall(y, (x <= maxx(x, y)) & (y <= maxx(x, y))))
+    maxworks = forall(x, forall(y, (x <= maxx(x, y)) & leq(y, maxx(x, y))))
     clampworks = forall(x, forall(y, forall(z, clamp(x, y, z) == maxx(y, minn(x, z)))))
     clampbounds = forall(
         x,
@@ -155,9 +158,11 @@ def test_nary_names() -> bool:
             y, forall(z, (y <= z) >> ((clamp(x, y, z) <= z) & (y <= clamp(x, y, z))))
         ),
     )
+    zmin = forall(x, zero <= x)
     assert minworks(*sems)
     assert maxworks(*sems)
     assert clampworks(*sems)
     assert clampbounds(*sems)
-    return True
+    assert zmin(*sems)
 
+    return True

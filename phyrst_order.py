@@ -4,11 +4,18 @@ from __future__ import annotations
 
 from enum import Enum
 from functools import reduce
-from typing import Any, Dict, Iterable, Optional, Sequence, TypeVar, Union, cast
-
-# TODO: Binary relationships should be writed infix, but other functions and
-# relationships should support f(t1, ..., tn) writing format
-# TODO: Support functions
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+    cast,
+)
 
 Element = TypeVar("Element")
 Universe = Iterable[Element]
@@ -103,7 +110,7 @@ class Expression:
 
     def __le__(self, o: Expression) -> Expression:
         # TODO: Maybe a bit too specific for posets
-        return Expression(f"({self} <= {o})", ExprType.REL, [self, o], "<=")
+        return Expression(f"({self} ≤ {o})", ExprType.REL, [self, o], "<=")
 
     def __and__(self, o: Expression) -> Expression:
         return Expression(f"({self} ∧ {o})", ExprType.AND, [self, o])
@@ -134,6 +141,37 @@ class Expression:
     def empty() -> Expression:
         "Returns an object representing an empty expression"
         return Expression("", ExprType.EMPTY)
+
+    # # def __call__(self, *args: Expression) -> Expression:
+    # #         assert self.exprtype in [ExprType.FUNC, ExprType.REL]
+    # #         assert cantidad de args coincide con nombre de mi func
+
+    @staticmethod
+    def from_interpretation(
+        interpretation: Interpretation, types: Sequence[ExprType]
+    ) -> List[Callable]:
+        # TODO: This doesn't really need the interpretation but the type
+        """Returns for each interpretation name a function that can be used
+        to write first order expressions"""
+
+        interps: List[Union[Callable, Expression]] = []
+        for (name, _), ntype in zip(interpretation.items(), types):
+            # arity = interpreted.__code__.co_argcount
+            if ntype is ExprType.CONST:
+                nconst = Expression(name, ExprType.CONST, name=name)
+                interps.append(nconst)
+            elif ntype in [ExprType.FUNC, ExprType.REL]:
+                nrelfunc = lambda *subexprs, name=name, ntype=ntype: Expression(
+                    f"{name}({', '.join(str(t) for t in subexprs)})",
+                    ntype,
+                    subexprs,
+                    name,
+                )
+                interps.append(nrelfunc)
+            else:
+                raise Exception(f"Invalid {ntype=}")
+
+        return interps
 
     def __str__(self) -> str:
         return self.expression
