@@ -1,8 +1,8 @@
-"Varied tests for the phyrst_order functionality"
+"Various tests for the phyrst module functionality"
 
 from typing import Tuple, cast
 
-from phyrst_order import (
+from phyrst import (
     Assignment,
     Element,
     Expression,

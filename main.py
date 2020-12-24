@@ -1,7 +1,7 @@
 "The only file intended to run. If you don't get an error it means all tests have passed"
 
-from phyrst_order import forall, var
-from tests import (
+from phyrst import forall, var
+from phyrst_test import (
     test_boole_algebra_model,
     test_nary_names,
     test_operator_expressions,

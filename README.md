@@ -1,4 +1,4 @@
-# Phyrst Order
+# Phyrst
 
 A first order syntax evaluator without dependencies using and abusing of
 python's operator overloading.
@@ -42,5 +42,9 @@ assert model.eval(sentence, assignment={"x1": 1})
 
 Another more thorough and interesting example of defining and evaluating
 expressions over a boolean algebra can be found on the
-[`test_boole_algebra()`](https://github.com/mateosss/phyrst-order/blob/d057a99cad8dd3be015874629cc8dd9cbc222bee/tests.py#L173)
+[`test_boole_algebra()`](https://github.com/mateosss/phyrst/blob/d057a99cad8dd3be015874629cc8dd9cbc222bee/tests.py#L173)
 test.
+
+*The name `phyrst` comes from **first** order, the greek letter φ
+(**phi**) usually used for representing first order formulas and the **py**
+suffix for python.*
