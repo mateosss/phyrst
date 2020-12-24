@@ -17,12 +17,14 @@ Each of the following operators is overloaded so as to compose a new
 - `!=`, `<=`, `<`, `>=`, `>`: Other non essential useful relationships.
 
 For expressing the sentence `∀𝑥 ∀𝑦 𝑥 ≤ 𝑦 ∨ 𝑦 ≤ 𝑥` you would write:
+
 ```py
 x, y = var("x"), var("y")
 sentence = forall(x, forall(y, (x <= y) | (y <= x)))
 ```
 
 And you can evaluate its truth value in a given model with:
+
 ```py
 # Example model of a chain poset with three elements and a minimum
 

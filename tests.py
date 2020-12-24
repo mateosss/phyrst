@@ -1,11 +1,10 @@
 "Varied tests for the phyrst_order functionality"
 
-# TODO: These tests may be too specific for posets as they use the <= operator
-
-from typing import cast
+from typing import Tuple, cast
 
 from phyrst_order import (
     Assignment,
+    Element,
     Expression,
     ExprType,
     Interpretation,
@@ -19,8 +18,32 @@ from phyrst_order import (
     var,
 )
 
+Semantics = Tuple[Universe, Interpretation, Assignment]
 
-def test_raw_expressions(
+
+def vchain_posets_semantics_example() -> Tuple[Semantics, Semantics]:
+    "Returns the semantics of a V shaped poset and a chain poset both with three elements"
+
+    def leqchain(rhs: Element, lfs: Element) -> bool:  # Order for chain poset
+        reflexiveness = [(elem, elem) for elem in universe]
+        return (rhs, lfs) in reflexiveness + [(0, 1), (1, 2), (0, 2)]
+
+    def leqv(rhs: Element, lfs: Element) -> bool:  # Order for V poset
+        reflexiveness = [(elem, elem) for elem in universe]
+        return (rhs, lfs) in reflexiveness + [(0, 1), (0, 2)]
+
+    universe: Universe = [0, 1, 2]
+    interpretation_v: Interpretation = {"<=": leqv, "0": 0}
+    interpretation_chain: Interpretation = {"<=": leqchain, "0": 0}
+    assignment: Assignment = {"x1": 1, "x0": 0, "x2": 2}
+
+    chain_sems = universe, interpretation_chain, assignment
+    v_sems = universe, interpretation_v, assignment
+
+    return v_sems, chain_sems
+
+
+def _test_raw_expressions(
     universe: Universe, interpretation: Interpretation, assignment: Assignment
 ) -> bool:
     "Tests expressions constructed from the ground up as regular classes"
@@ -51,7 +74,7 @@ def test_raw_expressions(
     return True
 
 
-def test_operator_expressions(
+def _test_operator_expressions(
     universe: Universe, interpretation: Interpretation, assignment: Assignment
 ) -> bool:
     "Tests expressions generated through operator chaining"
@@ -91,7 +114,7 @@ def test_operator_expressions(
     return True
 
 
-def test_quantification(
+def _test_quantification(
     universe: Universe, interpretation: Interpretation, assignment: Assignment
 ) -> bool:
     "Tests quantified expressions for a poset, in particular posets and related properties"
@@ -130,6 +153,27 @@ def test_quantification(
     assert zeromin(*sems)
     assert onlythree(*sems)
     return True
+
+
+def test_raw_expressions():
+    "Perform some raw expressions tests on particular posets"
+    v_sems, chain_sems = vchain_posets_semantics_example()
+    _test_raw_expressions(*v_sems)
+    _test_raw_expressions(*chain_sems)
+
+
+def test_operator_expressions():
+    "Perform some operator expressions tests on particular posets"
+    v_sems, chain_sems = vchain_posets_semantics_example()
+    _test_operator_expressions(*v_sems)
+    _test_operator_expressions(*chain_sems)
+
+
+def test_quantification():
+    "Perform some quantification tests on particular posets"
+    v_sems, chain_sems = vchain_posets_semantics_example()
+    _test_quantification(*v_sems)
+    _test_quantification(*chain_sems)
 
 
 def test_nary_names() -> bool:

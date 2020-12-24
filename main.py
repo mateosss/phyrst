@@ -1,50 +1,32 @@
-"This is a runnable usage of phyrst_order data types"
+"The only file intended to run. If you don't get an error it means all tests have passed"
 
-from phyrst_order import Assignment, Element, Interpretation, Universe, forall, var
+from phyrst_order import forall, var
 from tests import (
     test_boole_algebra_model,
     test_nary_names,
     test_operator_expressions,
     test_quantification,
     test_raw_expressions,
+    vchain_posets_semantics_example,
 )
 
 
 def main() -> None:
-    "Runs tests through two three-element posets. A V-like poset and a chain poset"
+    "Runs all tests and some more."
 
-    def leqchain(rhs: Element, lfs: Element) -> bool:  # Order for chain poset
-        reflexiveness = [(elem, elem) for elem in universe]
-        return (rhs, lfs) in reflexiveness + [(0, 1), (1, 2), (0, 2)]
-
-    def leqv(rhs: Element, lfs: Element) -> bool:  # Order for V poset
-        reflexiveness = [(elem, elem) for elem in universe]
-        return (rhs, lfs) in reflexiveness + [(0, 1), (0, 2)]
-
-    universe: Universe = [0, 1, 2]
-    interpretation_v: Interpretation = {"<=": leqv, "0": 0}
-    interpretation_chain: Interpretation = {"<=": leqchain, "0": 0}
-    assignment: Assignment = {"x1": 1, "x0": 0, "x2": 2}
-
-    chain_sems = universe, interpretation_chain, assignment
-    v_sems = universe, interpretation_v, assignment
-
-    test_raw_expressions(*v_sems)
-    test_raw_expressions(*chain_sems)
-
-    test_operator_expressions(*v_sems)
-    test_operator_expressions(*chain_sems)
-
-    test_quantification(*v_sems)
-    test_quantification(*chain_sems)
-
-    x, y = var("x"), var("y")
-    custom_expression = forall(x, forall(y, (x <= y) | (y <= x)))
-    print(f"[V]\t𝔸⊨{custom_expression}[𝑎⃗] ≡ {custom_expression(*v_sems)}")
-    print(f"[Chain]\t𝔹⊨{custom_expression}[𝑎⃗] ≡ {custom_expression(*chain_sems)}")
-
+    test_raw_expressions()
+    test_operator_expressions()
+    test_quantification()
     test_nary_names()
     test_boole_algebra_model()
+
+    # A quick check on total order without defining a type nor theory nor model
+    v_sems, chain_sems = vchain_posets_semantics_example()
+    x, y = var("x"), var("y")
+    totally_ordered = forall(x, forall(y, (x <= y) | (y <= x)))
+    assert totally_ordered(*chain_sems) and not totally_ordered(*v_sems)
+    print(f"[V]\t𝔸⊨{totally_ordered}[𝑎⃗] ≡ {totally_ordered(*v_sems)}")
+    print(f"[Chain]\t𝔹⊨{totally_ordered}[𝑎⃗] ≡ {totally_ordered(*chain_sems)}")
 
 
 if __name__ == "__main__":
