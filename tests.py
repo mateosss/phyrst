@@ -183,21 +183,25 @@ def test_boole_algebra_model() -> bool:
 
     # Theory definition
     x, y, z = var("x"), var("y"), var("z")
+
     reflexivity = forall(x, x <= x)
     transitivity = forall(x, forall(y, forall(z, ((x <= z) & (z <= y)) >> (x <= y))))
     antisimetry = forall(x, forall(y, ((x <= y) & (y <= x)) >> (x == y)))
     poset_axioms = [reflexivity, transitivity, antisimetry]
+
     sisbound = forall(x, forall(y, (x <= s(x, y)) & (y <= s(x, y))))
     slowbnd = forall(x, forall(y, forall(z, ((x <= z) & (y <= z)) >> (s(x, y) <= z))))
     iisbound = forall(x, forall(y, (i(x, y) <= x) & (i(x, y) <= y)))
     iuppbnd = forall(x, forall(y, forall(z, ((z <= x) & (z <= y)) >> (z <= i(x, y)))))
     ret_axioms = [sisbound, slowbnd, iisbound, iuppbnd]
+
     min0 = forall(x, s(zero, x) == x)
     max1 = forall(x, s(one, x) == one)
     scomplement = forall(x, s(x, c(x)) == one)
     icomplement = forall(x, i(x, c(x)) == zero)
     dist1 = forall(x, forall(y, forall(z, i(x, s(y, z)) == s(i(x, y), i(x, z)))))
     boole_axioms = [min0, max1, scomplement, icomplement, dist1]
+
     axioms = poset_axioms + ret_axioms + boole_axioms
     theory = Theory(axioms, ttype)
 
