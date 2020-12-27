@@ -1,5 +1,6 @@
 "Various tests for the phyrst module functionality"
 
+import itertools as it
 from typing import Tuple, cast
 
 from phyrst import (
@@ -279,4 +280,28 @@ def test_boole_algebra_model() -> bool:
     t = i(x1, s(x1, x2))
     assert model.eval(t, assignment) == {1}
 
+    return True
+
+
+def test_model_exploration():
+    "Looks for examples of certain models of up to three elements in a given theory"
+    ttype = Type([], [], ["r"], {"r": 2})
+    theory = Theory([], ttype)
+    r = Expression.expr_mappings(ttype)[0]
+    x, y = var("x"), var("y")
+    phi = exists(x, forall(y, r(x, y)))
+    psi = forall(y, exists(x, r(x, y)))
+
+    for l in [1, 2, 3]:  # universe sizes
+        relpairs = tuple(it.product(range(l), range(l)))  # possible 2-element relations
+        for k in range(len(relpairs) + 1):  # k: amount of pairs in the relationship
+            rels = it.combinations(relpairs, k)  # relationships with k pairs
+            for rel in rels:
+                interpretation = {"r": lambda x, y, rel=rel: (x, y) in rel}
+                model = Model(theory, range(l), interpretation)
+                satisfies_phi = model.eval(phi)
+                satisfies_psi = model.eval(psi)
+                if satisfies_psi and not satisfies_phi:
+                    pass  # Example found. Do something like print its r relationship
+                assert not satisfies_phi or satisfies_psi  # phi => psi
     return True

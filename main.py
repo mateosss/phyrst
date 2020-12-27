@@ -3,6 +3,7 @@
 from phyrst import forall, var
 from phyrst_test import (
     test_boole_algebra_model,
+    test_model_exploration,
     test_nary_names,
     test_operator_expressions,
     test_quantification,
@@ -19,6 +20,7 @@ def main() -> None:
     test_quantification()
     test_nary_names()
     test_boole_algebra_model()
+    test_model_exploration()
 
     # A quick check on total order without defining a type nor theory nor model
     v_sems, chain_sems = vchain_posets_semantics_example()
