@@ -309,8 +309,12 @@ class Model:
         assert all(iname in tnames for iname in interpretation)
 
         for name in fnames + rnames:
-            iargcount = interpretation[name].__code__.co_argcount
-            assert iargcount == arities[name], f"Incorrect arity of {name}"
+            pyfunc = interpretation[name]
+            arity = arities[name]
+            kw_argcount = len(pyfunc.__defaults__) if pyfunc.__defaults__ else 0
+            argcount = pyfunc.__code__.co_argcount
+            named_argscount = argcount - kw_argcount
+            assert named_argscount <= arity <= argcount, f"Incorrect arity of {name}"
 
         return True
 
