@@ -42,7 +42,7 @@ assert model.eval(sentence, assignment={"x1": 1})
 
 Another more thorough and interesting example of defining and evaluating
 expressions over a boolean algebra can be found on the
-[`test_boole_algebra()`](https://github.com/mateosss/phyrst/blob/d057a99cad8dd3be015874629cc8dd9cbc222bee/tests.py#L173)
+[`test_boole_algebra()`](https://github.com/mateosss/phyrst/blob/7db81e37e00e08860fe16eff208d8bd679506f5f/phyrst_test.py#L218)
 test.
 
 *The name `phyrst` comes from **first** order, the greek letter φ
