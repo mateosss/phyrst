@@ -47,4 +47,4 @@ test.
 
 *The name `phyrst` comes from **first** order, the greek letter φ
 (**phi**) usually used for representing first order formulas and the **py**
-suffix for python.*
+prefix for python.*

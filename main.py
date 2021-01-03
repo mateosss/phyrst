@@ -27,8 +27,8 @@ def main() -> None:
     x, y = var("x"), var("y")
     totally_ordered = forall(x, forall(y, (x <= y) | (y <= x)))
     assert totally_ordered(*chain_sems) and not totally_ordered(*v_sems)
-    print(f"[V]\t𝔸⊨{totally_ordered}[𝑎⃗] ≡ {totally_ordered(*v_sems)}")
-    print(f"[Chain]\t𝔹⊨{totally_ordered}[𝑎⃗] ≡ {totally_ordered(*chain_sems)}")
+    print(f"[V]\t𝔸 ⊨ {totally_ordered}[𝑎⃗] ≡ {totally_ordered(*v_sems)}")
+    print(f"[Chain]\t𝔹 ⊨ {totally_ordered}[𝑎⃗] ≡ {totally_ordered(*chain_sems)}")
 
 
 if __name__ == "__main__":
